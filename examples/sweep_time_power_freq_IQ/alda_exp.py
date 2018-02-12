@@ -6,15 +6,16 @@ Created on Wed Dec 20 21:02:21 2017
 """
 
 import matplotlib.pyplot as plt
-from alda.alda import *
+from alda.alda.alda import ALDa  # package.folder.file
 
 plt.close('all')
 filename = 'sweep_time_power_freq_IQ.dat'
 my_alda = ALDa(filename)
-my_data = my_alda.data_raw
+# my_data = my_alda.data_raw
 my_var_names = my_alda.var_names
-print(my_var_names)
+# print(my_var_names)
 res = my_alda.data_xy(my_var_names[2], my_var_names[0])
 var_names_xy, my_data_xy, my_data_xy_reshaped, var_xy_reshaped = res
-print(var_names_xy)
+# print(var_names_xy)
 my_alda.plot_xy(my_var_names[2], my_var_names[0])
+my_alda.avg_along_y(my_data_xy_reshaped)

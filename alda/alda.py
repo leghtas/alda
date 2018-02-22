@@ -162,6 +162,92 @@ class ALDa(object):
                                       var_xy_reshaped[ii, 0, 0][0]))
             ax.axis('tight')
 
+    def plot_xy_2(self, var_x, var_y):
+        # TODO generalize to N dimensions (not just 1+2(x,y)+2(I,Q))
+
+        res = self.data_xy(var_x, var_y)
+        var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped = res
+        shape = np.shape(data_xy_reshaped)
+        if len(shape) > 3:
+            new_shape = [np.prod(shape[:-3]), *shape[-3:]]
+        else:
+            new_shape = shape
+        data_xy_reshaped_to_plot = np.reshape(data_xy_reshaped,
+                                              tuple(new_shape))
+        x = self.var_vals[var_x]
+        x = np.append(x, 2*x[-1]-x[-2])
+        y = self.var_vals[var_y]
+        y = np.append(y, 2*y[-1]-y[-2])
+
+        dims = []
+        for var_name in var_names_xy[:-2]:
+            dims.append(self.var_dims[var_name])
+
+        for ii in np.arange(new_shape[0]):
+            I = data_xy_reshaped_to_plot[ii, :, :, 0]
+            Q = data_xy_reshaped_to_plot[ii, :, :, 1]
+            data_abs = np.abs(I+1j*Q)
+            fig, ax = plt.subplots()
+            ax.pcolor(x, y, data_abs)
+            ax.set_ylabel(var_y)
+            ax.set_xlabel(var_x)
+            title = ''
+            c = 1
+            for var_name in var_names_xy[:-2]:
+                Nr = np.prod(dims[c:])
+                Nv = self.var_dims[var_name]
+                var_vals = self.var_vals[var_name]
+                title += "%s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
+                                                                Nv)])
+                c += 1
+            ax.set_title(title)
+            ax.axis('tight')
+
+    def plot_x_2(self, var_x, var_y=None):
+        # TODO display variable names on each plot
+
+        if var_y is None and self.var_num > 1:
+            uu = -1
+            var_y = self.var_names[uu]
+            while var_y != var_x:
+                uu -= 1
+                var_y = self.var_names[uu]
+
+        res = self.data_xy(var_x, var_y)
+        var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped = res
+        x = self.var_vals[var_x]
+
+        shape = np.shape(data_xy_reshaped)
+        if len(shape) > 2:
+            new_shape = [np.prod(shape[:-2]), *shape[-2:]]
+        else:
+            new_shape = shape
+        data_xy_reshaped_to_plot = np.reshape(data_xy_reshaped,
+                                              tuple(new_shape))
+        dims = []
+        for var_name in var_names_xy[:-1]:
+            dims.append(self.var_dims[var_name])
+
+        for ii in np.arange(new_shape[0]):
+            I = data_xy_reshaped_to_plot[ii, :, 0]
+            Q = data_xy_reshaped_to_plot[ii, :, 1]
+            data_abs = np.abs(I+1j*Q)
+            fig, ax = plt.subplots()
+            ax.plot(x, data_abs)
+            ax.set_ylabel('abs')
+            ax.set_xlabel(var_x)
+            title = ''
+            c = 1
+            for var_name in var_names_xy[:-1]:
+                Nr = np.prod(dims[c:])
+                Nv = self.var_dims[var_name]
+                var_vals = self.var_vals[var_name]
+                title += "%s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
+                                                                Nv)])
+                c += 1
+            ax.set_title(title)
+            ax.axis('tight')
+
     def plot_x(self, var_x, var_y=None):
         # TODO display variable names on each plot
 

@@ -8,6 +8,7 @@ Created on Wed Dec 20 20:43:55 2017
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+import scipy
 
 #import fit
 
@@ -23,6 +24,22 @@ def make_var_vals(base_array, r, L):
     while np.shape(var_vals)[0] != L:
         var_vals = np.append(var_vals, var_vals0)
     return var_vals
+
+
+def rotate_data(data):
+    I = np.real(data)
+    Q = np.imag(data)
+    Cov = np.cov(I, Q)
+    A = scipy.linalg.eig(Cov)
+    eigvecs = A[1]
+    if A[0][1] > A[0][0]:
+        eigvec1 = eigvecs[:, 0]
+    else:
+        eigvec1 = eigvecs[:, 1]
+    theta = np.arctan(eigvec1[0]/eigvec1[1])
+    data_rot = np.exp(1j*theta)*data
+    return data_rot
+
 
 class ALDa(object):
     '''
@@ -162,7 +179,7 @@ class ALDa(object):
                                       var_xy_reshaped[ii, 0, 0][0]))
             ax.axis('tight')
 
-    def plot_xy_2(self, var_x, var_y):
+    def plot_xy_2(self, var_x, var_y, mode='abs'):
         # TODO generalize to N dimensions (not just 1+2(x,y)+2(I,Q))
 
         res = self.data_xy(var_x, var_y)
@@ -186,18 +203,25 @@ class ALDa(object):
         for ii in np.arange(new_shape[0]):
             I = data_xy_reshaped_to_plot[ii, :, :, 0]
             Q = data_xy_reshaped_to_plot[ii, :, :, 1]
-            data_abs = np.abs(I+1j*Q)
+            if mode == 'abs':
+                data = np.abs(I+1j*Q)
+            elif mode == 'angle':
+                data = np.angle(I+1j*Q)
+            elif mode == 'rotate':
+                data = np.real(rotate_data(I+1j*Q))
+            else:
+                raise Exception('mode not supported')
             fig, ax = plt.subplots()
-            ax.pcolor(x, y, data_abs)
+            ax.pcolor(x, y, data)
             ax.set_ylabel(var_y)
             ax.set_xlabel(var_x)
-            title = ''
+            title = mode
             c = 1
             for var_name in var_names_xy[:-2]:
                 Nr = np.prod(dims[c:])
                 Nv = self.var_dims[var_name]
                 var_vals = self.var_vals[var_name]
-                title += "%s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
+                title += " %s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
                                                                 Nv)])
                 c += 1
             ax.set_title(title)

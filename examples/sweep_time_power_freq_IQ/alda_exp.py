@@ -17,5 +17,5 @@ my_var_names = my_alda.var_names
 res = my_alda.data_xy(my_var_names[2], my_var_names[0])
 var_names_xy, my_data_xy, my_data_xy_reshaped, var_xy_reshaped = res
 # print(var_names_xy)
-my_alda.plot_xy_2(my_var_names[2], my_var_names[0], mode='rotate')
+my_alda.plot_x(my_var_names[2], my_var_names[0], mode='rotate')
 #my_alda.avg_along_y(my_data_xy_reshaped)

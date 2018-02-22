@@ -41,6 +41,20 @@ def rotate_data(data):
     return data_rot
 
 
+def get_data_mode(I, Q, mode):
+    if mode == 'abs':
+        data = np.abs(I+1j*Q)
+    elif mode == 'angle':
+        data = np.angle(I+1j*Q)
+    elif mode == 'rotate':
+        data = np.real(rotate_data(I+1j*Q))
+    else:
+        msg = ('mode = %s not supported, choose between ' +
+               'abs, angle or rotate') % mode
+        raise Exception(msg)
+    return data
+
+
 class ALDa(object):
     '''
     Load and analyze loops of data
@@ -156,32 +170,7 @@ class ALDa(object):
             var_xy_reshaped = np.reshape(data_xy[:, :-4], tuple(resh2))
             return var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped
 
-    def plot_xy(self, var_x, var_y):
-        # TODO generalize to N dimensions (not just 1+2(x,y)+2(I,Q))
-
-        res = self.data_xy(var_x, var_y)
-        var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped = res
-        x = self.var_vals[var_x]
-        x = np.append(x, 2*x[-1]-x[-2])
-        y = self.var_vals[var_y]
-        y = np.append(y, 2*y[-1]-y[-2])
-
-        shape = np.shape(data_xy_reshaped)
-        for ii in np.arange(shape[0]):
-            I = data_xy_reshaped[ii, :, :, 0]
-            Q = data_xy_reshaped[ii, :, :, 1]
-            data_abs = np.abs(I+1j*Q)
-            fig, ax = plt.subplots()
-            ax.pcolor(x, y, data_abs)
-            ax.set_ylabel(var_y)
-            ax.set_xlabel(var_x)
-            ax.set_title("%s = %s" % (var_names_xy[0],
-                                      var_xy_reshaped[ii, 0, 0][0]))
-            ax.axis('tight')
-
-    def plot_xy_2(self, var_x, var_y, mode='abs'):
-        # TODO generalize to N dimensions (not just 1+2(x,y)+2(I,Q))
-
+    def plot_xy(self, var_x, var_y, mode='abs'):
         res = self.data_xy(var_x, var_y)
         var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped = res
         shape = np.shape(data_xy_reshaped)
@@ -203,14 +192,7 @@ class ALDa(object):
         for ii in np.arange(new_shape[0]):
             I = data_xy_reshaped_to_plot[ii, :, :, 0]
             Q = data_xy_reshaped_to_plot[ii, :, :, 1]
-            if mode == 'abs':
-                data = np.abs(I+1j*Q)
-            elif mode == 'angle':
-                data = np.angle(I+1j*Q)
-            elif mode == 'rotate':
-                data = np.real(rotate_data(I+1j*Q))
-            else:
-                raise Exception('mode not supported')
+            data = get_data_mode(I, Q, mode)
             fig, ax = plt.subplots()
             ax.pcolor(x, y, data)
             ax.set_ylabel(var_y)
@@ -222,14 +204,12 @@ class ALDa(object):
                 Nv = self.var_dims[var_name]
                 var_vals = self.var_vals[var_name]
                 title += " %s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
-                                                                Nv)])
+                                                                 Nv)])
                 c += 1
             ax.set_title(title)
             ax.axis('tight')
 
-    def plot_x_2(self, var_x, var_y=None):
-        # TODO display variable names on each plot
-
+    def plot_x(self, var_x, var_y=None, mode='abs'):
         if var_y is None and self.var_num > 1:
             uu = -1
             var_y = self.var_names[uu]
@@ -255,62 +235,28 @@ class ALDa(object):
         for ii in np.arange(new_shape[0]):
             I = data_xy_reshaped_to_plot[ii, :, 0]
             Q = data_xy_reshaped_to_plot[ii, :, 1]
-            data_abs = np.abs(I+1j*Q)
+            data = get_data_mode(I, Q, mode)
             fig, ax = plt.subplots()
-            ax.plot(x, data_abs)
+            ax.plot(x, data)
             ax.set_ylabel('abs')
             ax.set_xlabel(var_x)
-            title = ''
+            title = mode
             c = 1
             for var_name in var_names_xy[:-1]:
                 Nr = np.prod(dims[c:])
                 Nv = self.var_dims[var_name]
                 var_vals = self.var_vals[var_name]
-                title += "%s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
+                title += " %s = %s" % (var_name, var_vals[np.mod(int(ii/Nr),
                                                                 Nv)])
                 c += 1
             ax.set_title(title)
             ax.axis('tight')
 
-    def plot_x(self, var_x, var_y=None):
-        # TODO display variable names on each plot
-
-        if var_y is None and self.var_num > 1:
-            uu = -1
-            var_y = self.var_names[uu]
-            while var_y != var_x:
-                uu -= 1
-                var_y = self.var_names[uu]
-
-        res = self.data_xy(var_x, var_y)
-        var_names_xy, data_xy, data_xy_reshaped, var_xy_reshaped = res
-        x = self.var_vals[var_x]
-
-        dim_params = self.num_variations_padded/len(x)
-
-        data_xy_reshaped_to_plot = np.reshape(data_xy_reshaped,
-                                              (dim_params,
-                                               len(self.var_vals[var_x]), 2))
-
-        for ii in np.arange(dim_params):
-            I = data_xy_reshaped_to_plot[ii, :, 0]
-            Q = data_xy_reshaped_to_plot[ii, :, 1]
-            data_abs = np.abs(I+1j*Q)
-            fig, ax = plt.subplots()
-            ax.plot(x, data_abs)
-            ax.set_ylabel(var_y)
-            ax.set_xlabel(var_x)
-            #ax.set_title("%s = %s" % (var_names_xy[0],
-            #                          var_xy_reshaped[ii, 0, 0][0]))
-            ax.axis('tight')
-
-    def avg_along_y(self, data_xy_reshaped):
+    def avg_along_y(self, data_xy_reshaped, mode='abs'):
         data_avg_along_y = np.mean(data_xy_reshaped, axis=1)
 
         x = self.var_vals[self.var_x]
-        #x = np.append(x, 2*x[-1]-x[-2])
         y = self.var_vals[self.var_y]
-        #y = np.append(y, 2*y[-1]-y[-2])
 
         dim_params = self.num_variations_padded/len(x)/len(y)
 
@@ -320,12 +266,12 @@ class ALDa(object):
         for ii in np.arange(dim_params):
             I = data_xy_reshaped_to_plot[ii, :, 0]
             Q = data_xy_reshaped_to_plot[ii, :, 1]
-            data_abs = np.abs(I+1j*Q)
+            data = get_data_mode(I, Q, mode)
             fig, ax = plt.subplots()
-            ax.plot(x, data_abs)
-            #ax.set_ylabel(var_y)
-            #ax.set_xlabel(var_x)
-#            ax.set_title("%s = %s" % (var_names_xy[0],
-#                                      var_xy_reshaped[ii, 0, 0][0]))
+            ax.plot(x, data)
+            # ax.set_ylabel(var_y)
+            # ax.set_xlabel(var_x)
+            # ax.set_title("%s = %s" % (var_names_xy[0],
+            #                           var_xy_reshaped[ii, 0, 0][0]))
             ax.axis('tight')
         return data_avg_along_y
